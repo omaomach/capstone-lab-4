@@ -218,9 +218,3 @@ aws cloudformation delete-stack --stack-name CDKToolkit --region eu-west-1
 The CodeStar Connection can be deleted from the AWS Console (CodePipeline → Settings → Connections).
 
 ---
-
-## Submission
-
-GitHub repository: <https://github.com/omaomach/capstone-lab-4>
-
-Submitted by: **Omao Machoka** (Moringa AWS Cloud Engineering, Capstone 4)
