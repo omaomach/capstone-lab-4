@@ -19,7 +19,8 @@ export class AppStack extends cdk.Stack {
     // -----------------------------------------------------------
     const configParam = new ssm.StringParameter(this, "AppGreetingParam", {
       parameterName: "/app/config/greeting",
-      stringValue: "Hello from CI/CD Automated Infrastructure!",
+      stringValue:
+        "Hello from a pipeline-managed SSM parameter — deployed automatically on push.",
       description: "Greeting message read by the workflow Lambda at runtime",
       tier: ssm.ParameterTier.STANDARD,
     });
