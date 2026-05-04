@@ -54,8 +54,11 @@ export class PipelineStack extends cdk.Stack {
     const pipeline = new pipelines.CodePipeline(this, "WorkflowPipeline", {
       pipelineName: "CapstoneProject4-Pipeline",
       synth: synthStep,
-      crossAccountKeys: false, // Single-account; no cross-account key needed (saves ~$1/mo)
-      selfMutation: true, // Pipeline updates itself when pipeline-stack.ts changes
+      crossAccountKeys: false,
+      selfMutation: true,
+      // Explicit V1 type forces a webhook-based trigger which fires reliably
+      // on push. V2 with DetectChanges occasionally misses GitHub events.
+      pipelineType: cdk.aws_codepipeline.PipelineType.V1,
     });
 
     // -----------------------------------------------------------
