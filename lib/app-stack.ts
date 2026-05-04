@@ -6,7 +6,11 @@ import * as sfn from "aws-cdk-lib/aws-stepfunctions";
 import * as tasks from "aws-cdk-lib/aws-stepfunctions-tasks";
 import * as logs from "aws-cdk-lib/aws-logs";
 
-export class CapstoneProject4Stack extends cdk.Stack {
+/**
+ * Application stack: contains the SSM parameter, Lambda function,
+ * and Step Functions state machine. Deployed via the CI/CD pipeline.
+ */
+export class AppStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
@@ -39,18 +43,11 @@ export class CapstoneProject4Stack extends cdk.Stack {
     // -----------------------------------------------------------
     // 4. Step Functions — workflow orchestration
     // -----------------------------------------------------------
-    // State 1: Wait — pauses the workflow for 2 seconds.
-    // Demonstrates the Wait state type and gives the visual graph
-    // a clearly-distinguishable first node.
     const waitState = new sfn.Wait(this, "WaitTwoSeconds", {
       time: sfn.WaitTime.duration(cdk.Duration.seconds(2)),
       comment: "Brief pause before invoking the Lambda",
     });
 
-    // State 2: Task — invokes the Lambda function.
-    // payloadResponseOnly: true unwraps the Lambda response so the
-    // state output is just the return value (cleaner than the full
-    // Lambda invocation envelope).
     const invokeLambdaTask = new tasks.LambdaInvoke(
       this,
       "InvokeWorkflowLambda",
@@ -61,8 +58,6 @@ export class CapstoneProject4Stack extends cdk.Stack {
       }
     );
 
-    // Retry policy — runs on transient failures (throttling, timeouts).
-    // Exponential backoff: waits 2s, then 4s, then 8s between attempts.
     invokeLambdaTask.addRetry({
       maxAttempts: 3,
       interval: cdk.Duration.seconds(2),
@@ -75,9 +70,6 @@ export class CapstoneProject4Stack extends cdk.Stack {
       ],
     });
 
-    // Catch state — if all retries are exhausted, route to a Fail
-    // state with a clear cause. Without this, errors propagate
-    // silently as raw exceptions in the execution history.
     const failState = new sfn.Fail(this, "WorkflowFailed", {
       cause: "Lambda invocation failed after all retries",
       error: "WorkflowExecutionError",
@@ -88,17 +80,15 @@ export class CapstoneProject4Stack extends cdk.Stack {
       resultPath: "$.error",
     });
 
-    // Definition: chain the states together. Wait → Invoke Lambda → done.
     const definition = waitState.next(invokeLambdaTask);
 
-    // Log group for the state machine — created explicitly so it's
-    // managed by CloudFormation and has a sensible retention period.
     const stateMachineLogGroup = new logs.LogGroup(
       this,
       "StateMachineLogGroup",
       {
-        logGroupName:
-          "/aws/vendedlogs/states/CapstoneProject4-WorkflowStateMachine",
+        logGroupName: `/aws/vendedlogs/states/${
+          cdk.Stack.of(this).stackName
+        }-WorkflowStateMachine`,
         retention: logs.RetentionDays.TWO_WEEKS,
         removalPolicy: cdk.RemovalPolicy.DESTROY,
       }
